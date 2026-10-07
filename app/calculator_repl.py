@@ -51,7 +51,7 @@ def calculator_repl():
                     try:
                         calc.save_history()
                         print("History saved successfully.")
-                    except Exception as e:
+                    except OperationError as e:
                         print(f"Warning: Could not save history: {e}")
                     print("Goodbye!")
                     break
@@ -94,7 +94,7 @@ def calculator_repl():
                     try:
                         calc.save_history()
                         print("History saved successfully")
-                    except Exception as e:
+                    except OperationError as e:
                         print(f"Error saving history: {e}")
                     continue
 
@@ -103,7 +103,7 @@ def calculator_repl():
                     try:
                         calc.load_history()
                         print("History loaded successfully")
-                    except Exception as e:
+                    except OperationError as e:
                         print(f"Error loading history: {e}")
                     continue
 
