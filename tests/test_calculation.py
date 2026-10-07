@@ -6,24 +6,23 @@ from app.exceptions import OperationError
 import logging
 
 
-def test_addition():
-    calc = Calculation(operation="Addition", operand1=Decimal("2"), operand2=Decimal("3"))
-    assert calc.result == Decimal("5")
+#Parameterized tests for different operations
+@pytest.mark.parametrize("operation, operand1, operand2, expected", [
+    ("Addition", Decimal("2"), Decimal("3"), Decimal("5")),
+    ("Subtraction", Decimal("5"), Decimal("3"), Decimal("2")),
+    ("Multiplication", Decimal("4"), Decimal("2"), Decimal("8")),
+    ("Division", Decimal("8"), Decimal("2"), Decimal("4")),
+    ("Power", Decimal("2"), Decimal("3"), Decimal("8")),
+    ("Root", Decimal("16"), Decimal("2"), Decimal("4")),
+])
+def test_calculation_operations(operation, operand1, operand2, expected):
+    calc = Calculation(
+        operation=operation,
+        operand1=operand1,
+        operand2=operand2
+    )
 
-
-def test_subtraction():
-    calc = Calculation(operation="Subtraction", operand1=Decimal("5"), operand2=Decimal("3"))
-    assert calc.result == Decimal("2")
-
-
-def test_multiplication():
-    calc = Calculation(operation="Multiplication", operand1=Decimal("4"), operand2=Decimal("2"))
-    assert calc.result == Decimal("8")
-
-
-def test_division():
-    calc = Calculation(operation="Division", operand1=Decimal("8"), operand2=Decimal("2"))
-    assert calc.result == Decimal("4")
+    assert calc.result == expected
 
 
 def test_division_by_zero():
@@ -31,19 +30,10 @@ def test_division_by_zero():
         Calculation(operation="Division", operand1=Decimal("8"), operand2=Decimal("0"))
 
 
-def test_power():
-    calc = Calculation(operation="Power", operand1=Decimal("2"), operand2=Decimal("3"))
-    assert calc.result == Decimal("8")
-
-
 def test_negative_power():
     with pytest.raises(OperationError, match="Negative exponents are not supported"):
         Calculation(operation="Power", operand1=Decimal("2"), operand2=Decimal("-3"))
 
-
-def test_root():
-    calc = Calculation(operation="Root", operand1=Decimal("16"), operand2=Decimal("2"))
-    assert calc.result == Decimal("4")
 
 
 def test_invalid_root():
@@ -108,6 +98,16 @@ def test_equality():
     assert calc1 == calc2
     assert calc1 != calc3
 
+def test_equality_with_non_calculation():
+    calc1 = Calculation(operation="Addition", operand1=Decimal("2"), operand2=Decimal("3"))
+    calc2 = Calculation(operation="Addition", operand1=Decimal("2"), operand2=Decimal("3"))
+    calc3 = Calculation(operation="Subtraction", operand1=Decimal("5"), operand2=Decimal("3"))
+
+    assert calc1 == calc2
+    assert calc1 != calc3
+    assert calc1 != "not a calculation"
+
+
 
 # New Test to Cover Logging Warning
 def test_from_dict_result_mismatch(caplog):
@@ -130,3 +130,44 @@ def test_from_dict_result_mismatch(caplog):
 
     # Assert
     assert "Loaded calculation result 10 differs from computed result 5" in caplog.text
+
+
+def test_str():
+    calc = Calculation(
+        operation="Addition",
+        operand1=Decimal("2"),
+        operand2=Decimal("3")
+    )
+
+    assert str(calc) == "Addition(2, 3) = 5"
+
+def test_repr():
+    calc = Calculation(
+        operation="Addition",
+        operand1=Decimal("2"),
+        operand2=Decimal("3")
+    )
+
+    result = repr(calc)
+
+    assert "Calculation(operation='Addition'" in result
+    assert "operand1=2" in result
+    assert "operand2=3" in result
+    assert "result=5" in result
+
+
+
+def test_calculation_error():
+    calc = Calculation.__new__(Calculation)
+
+    calc.operation = "Addition"
+
+    class ErrorValue:
+        def __add__(self, other):
+            raise ArithmeticError("Test arithmetic error")
+
+    calc.operand1 = ErrorValue()
+    calc.operand2 = Decimal("3")
+
+    with pytest.raises(OperationError, match="Calculation failed: Test arithmetic error"):
+        calc.calculate()
